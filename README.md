@@ -1,7 +1,3 @@
-Here’s a polished **README.md** you can drop straight into your repository. It explains the project, how it works, and how to build/run it:
-
----
-
 ```markdown
 # Moving the Tower on Your Pi 🏰✨
 
