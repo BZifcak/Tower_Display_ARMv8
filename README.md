@@ -1,118 +1,106 @@
-```markdown
-# Moving the Tower on Your Pi 🏰✨
+# Tower — Raspberry Pi LED Tower Game (ARM64 Assembly)
 
-An ARMv8 (AArch64) assembly project for Raspberry Pi that demonstrates joystick input, framebuffer graphics, and interactive LED control. The program draws and moves a control dot across an 8×8 LED array, builds a triangular "tower" when the dot reaches the bottom, and cycles through colors on joystick press.
+This project implements **“Moving the Tower”** for an 8×8 RGB LED matrix using the Raspberry Pi.
+The program is written entirely in **ARM64 assembly** and interfaces with two provided modules:
 
----
-
-## 📖 Project Description
-
-This project implements the **Moving the Tower** assignment:
-
-- The program is written entirely in **assembly** (`tower.s`).
-- It links against two support files:
-  - `lights.s` → framebuffer and pixel drawing routines
-  - `joystick.s` → joystick input routines
-- When executed:
-  1. A single dot appears at one edge of the LED array.
-  2. Moving the joystick moves the dot in the corresponding direction.
-  3. The dot cannot move off the LED array boundaries.
-  4. When the dot moves off the "bottom row," a **triangle tower** is drawn beneath it:
-     - Each row expands symmetrically (3 pixels, 5 pixels, etc.).
-  5. Pressing the joystick button cycles the tower’s color:
-     - At least three colors are supported (blue, green, white).
-     - After ~10 presses, the screen clears and the program exits.
-
-You can run the provided `towerAR` binary to see the expected behavior.
+* `lights.s` → framebuffer + `setPixel`
+* `joystick.s` → joystick input handler
 
 ---
 
-## 🛠️ Exported Functions
+## 🎮 Program Behavior
 
-From `joystick.s`:
+### 1. **Startup**
 
-```c
-int openJoystick(int deviceNum);
-void closeJoystick();
-int getJoystickValue();
+* The program initializes the joystick and framebuffer.
+* A single **control dot** appears at the top edge of the LED array.
+* Default color: **red**.
+
+### 2. **Movement**
+
+Using the joystick:
+
+| Input | Action         |
+| ----- | -------------- |
+| Up    | Move dot up    |
+| Down  | Move dot down  |
+| Left  | Move dot left  |
+| Right | Move dot right |
+
+The dot is **clamped** to remain inside the 8×8 grid.
+
+### 3. **Drawing the Tower**
+
+When the control dot moves off the **bottom edge**:
+
+* The screen clears.
+* A **centered triangle (tower)** is drawn downward, expanding symmetrically:
+
+```
+    ●
+   ●●●
+  ●●●●●
 ```
 
-From `lights.s`:
+* Tower color matches the control dot.
 
-```c
-void openfb();
-void closefb();
-uint16_t getColor(int r, int g, int b);
-void setPixel(int x, int y, uint16_t color);
+### 4. **Color Cycling**
+
+Pressing the joystick button cycles colors through:
+
+1. Red
+2. Blue
+3. Green
+4. White
+   …continuing until **10 presses**, after which:
+
+* Screen clears
+* Program exits cleanly
+
+---
+
+## 🗂 File Overview
+
+```
+tower.s        → Main program logic
+lights.s       → Framebuffer + setPixel
+joystick.s     → Joystick driver and event parser
+Makefile       → Build instructions
 ```
 
 ---
 
-## 📂 File Structure
-
-```
-├── tower.s       # Main assembly program
-├── lights.s      # Framebuffer routines
-├── joystick.s    # Joystick routines
-├── Makefile      # Build rules
-```
-
----
-
-## ⚙️ Build Instructions
-
-On Raspberry Pi (ARMv8/AArch64):
+## 🛠 Build & Run
 
 ```bash
-# Assemble and link
 make
-
-# Run the program
-./tower
+sudo ./tower
 ```
 
-To clean build artifacts:
+---
+
+## 📁 Key Functions (tower.s)
+
+* `_start` — initialization + main loop
+* `getJoystickValue` — interprets joystick events
+* `.safeDisplay` — bounds check + mapped LED coordinate
+* `.drawTower` — draws centered triangle
+* `.clear` — clears entire LED matrix
+
+---
+
+## 📷 Demo
+
+Run the instructor's reference program:
 
 ```bash
-make clean
+./towerAR
 ```
 
 ---
 
-## 🎮 Controls
+## 📜 Notes
 
-- **Joystick directions** → Move the control dot.
-- **Joystick press (click)** → Cycle through colors.
-- **After ~10 presses** → Screen clears and program exits.
-
----
-
-## 🖼️ Example Behavior
-
-- Start: dot appears at edge of LED array.
-- Move: joystick moves dot around.
-- Bottom row: tower expands symmetrically beneath the dot.
-- Press: tower changes color (blue → green → white).
-- Exit: after multiple presses, screen clears and program terminates.
-
----
-
-## 🚀 Notes
-
-- Written in **ARMv8 assembly** for Raspberry Pi.
-- Demonstrates low-level interaction with `/dev/fb0` or `/dev/fb1` (framebuffer) and `/dev/input/event0` (joystick).
-- Uses system calls (`svc`) directly for I/O.
-
----
-
-## 📜 License
-
-Educational project for University of Delaware coursework.  
-Feel free to fork and experiment!
-```
-
----
-
-This README gives your graders and anyone browsing your repo a clear overview of what the project does, how to build it, and how to interact with it.  
-
-Do you want me to also add a **diagram of the triangle growth pattern** (like ASCII art showing how the tower expands row by row) to make the README more visual?
+* Works on `/dev/fb0` or `/dev/fb1` automatically.
+* Uses 16-bit RGB565 color via `getColor`.
+* Triangle width adapts dynamically based on the dot’s X coordinate.
